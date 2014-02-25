@@ -13,25 +13,39 @@
 // The CSS used here is also very important since it sets up the CSS for the text layer divs overlays that
 // you actually end up selecting.
 
-window.onload = function () {
+(function () {
+  'use strict';
+
   if (typeof PDFJS === 'undefined') {
     alert('Built version of pdf.js is not found\nPlease run `node make generic`');
     return;
   }
+  var pdf, pagesNum, currentPage;
 
-  var scale = 1.5; //Set this to whatever you want. This is basically the "zoom" factor for the PDF.
+  var scale = 1; //Set this to whatever you want. This is basically the "zoom" factor for the PDF.
   PDFJS.workerSrc = '../../build/generic/build/pdf.worker.js';
+//    PDFJS.disableWorker = true;
 
-  function loadPdf(pdfPath) {
-    var pdf = PDFJS.getDocument(pdfPath);
-    pdf.then(renderPdf);
-  }
+  window.loadPdf = function loadPdf(pdfPath) {
+    PDFJS.getDocument(pdfPath).then(renderPdf);
+  };
 
-  function renderPdf(pdf) {
-    pdf.getPage(1).then(renderPage);
-  }
+  window.renderPdf = function renderPdf(pdfDoc) {
+    console.log('pages', pdfDoc.numPages);
+    pagesNum = pdfDoc.numPages;
+    pdf = pdfDoc;
+    switchToPage(1);
+  };
 
-  function renderPage(page) {
+  window.switchToPage = function switchToPage(pageNum) {
+    if (pageNum > 0 && pageNum <= pagesNum) {
+      currentPage = pageNum;
+      console.log('new page', currentPage);
+      pdf.getPage(pageNum).then(renderPage);
+    }
+  };
+
+  window.renderPage = function renderPage(page) {
     var viewport = page.getViewport(scale);
     var $canvas = jQuery("<canvas></canvas>");
 
@@ -49,8 +63,8 @@ window.onload = function () {
     // Append the canvas to the pdf container div
     var $pdfContainer = jQuery("#pdfContainer");
     $pdfContainer.css("height", canvas.style.height)
-                 .css("width", canvas.style.width);
-    $pdfContainer.append($canvas);
+      .css("width", canvas.style.width);
+    $pdfContainer.empty().append($canvas);
 
     var canvasOffset = $canvas.offset();
     var $textLayerDiv = jQuery("<div />")
@@ -85,8 +99,24 @@ window.onload = function () {
 
       page.render(renderContext);
     });
-  }
+  };
 
-  loadPdf('pdf/TestDocument.pdf');
-};
+  window.onload = function () {
+    loadPdf('../../web/compressed.tracemonkey-pldi-09.pdf');
+//    loadPdf('../text-selection/pdf/TestDocument.pdf');
 
+    $('#prev-page').on('click', function () {
+      switchToPage(currentPage - 1);
+    });
+
+    $('#next-page').on('click', function () {
+      switchToPage(currentPage + 1);
+    });
+
+    $('#scale').on('change', function () {
+      scale = parseInt(this.value);
+      switchToPage(currentPage);
+    });
+  };
+
+})();

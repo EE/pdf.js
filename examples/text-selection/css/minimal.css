@@ -55,3 +55,8 @@ body {
     background-color: rgba(0, 100, 0, 0.2);
 }
 
+#pdfContainer {
+    position: relative;
+    top: 20px;
+}
+
